@@ -1,10 +1,13 @@
-﻿import {
+﻿
+import {
   Ban,
   CalendarDays,
   Clock3,
   MapPin,
   PackageSearch,
+  Search,
 } from "lucide-react";
+
 import type { Reservation } from "@/features/reservations/reservationSlice";
 import { ReservationFilters } from "./reservation-filters";
 import type { ReservationFilter } from "@/features/reservations/reservationTypes";
@@ -32,95 +35,141 @@ export function ReservationTable({
   formatTime,
 }: ReservationTableProps) {
   return (
-    <section className="fb-panel fb-module-panel">
-      <div className="fb-panel-heading">
+    <section className="fb-panel fb-module-panel overflow-hidden">
+      {/* Section heading */}
+      <div className="fb-panel-heading flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2>Reservation Records</h2>
-          <p>
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <CalendarDays size={19} />
+            </div>
+
+            <h2 className="text-base font-semibold text-slate-800">
+              Reservation Records
+            </h2>
+          </div>
+
+          <p className="mt-2 text-sm text-slate-500">
             Review booking requests, schedules and reservation status.
           </p>
         </div>
 
-        <span className="fb-period-label">
-          {reservations.length} records
+        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          {reservations.length}{" "}
+          {reservations.length === 1 ? "record" : "records"}
         </span>
       </div>
 
-      <ReservationFilters
-        search={search}
-        statusFilter={statusFilter}
-        onSearchChange={onSearchChange}
-        onStatusChange={onStatusChange}
-      />
+      {/* Search and filters */}
+      <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+        <ReservationFilters
+          search={search}
+          statusFilter={statusFilter}
+          onSearchChange={onSearchChange}
+          onStatusChange={onStatusChange}
+        />
+      </div>
 
-      <div className="fb-table-wrap">
-        <table className="fb-table fb-module-table">
+      {/* Reservation table */}
+      <div className="fb-table-wrap overflow-x-auto">
+        <table className="fb-table fb-module-table w-full min-w-[850px]">
           <thead>
-            <tr>
-              <th>RESOURCE</th>
-              <th>REQUESTED BY</th>
-              <th>DATE</th>
-              <th>TIME</th>
-              <th>STATUS</th>
-              <th>ACTION</th>
+            <tr className="bg-slate-50">
+              <th className="px-5 py-4 text-left text-[11px] font-semibold tracking-wider text-slate-500">
+                RESOURCE
+              </th>
+              <th className="px-5 py-4 text-left text-[11px] font-semibold tracking-wider text-slate-500">
+                REQUESTED BY
+              </th>
+              <th className="px-5 py-4 text-left text-[11px] font-semibold tracking-wider text-slate-500">
+                DATE
+              </th>
+              <th className="px-5 py-4 text-left text-[11px] font-semibold tracking-wider text-slate-500">
+                SCHEDULE
+              </th>
+              <th className="px-5 py-4 text-left text-[11px] font-semibold tracking-wider text-slate-500">
+                STATUS
+              </th>
+              <th className="px-5 py-4 text-left text-[11px] font-semibold tracking-wider text-slate-500">
+                ACTION
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {reservations.map((reservation) => (
-              <tr key={reservation.id}>
-                <td>
-                  <div className="flex flex-col gap-1">
-                    <strong>{reservation.resource}</strong>
-                    <span className="text-xs text-gray-500">
-                      {reservation.category}
+              <tr
+                key={reservation.id}
+                className="border-b border-slate-100 transition-colors hover:bg-slate-50/70"
+              >
+                {/* Resource */}
+                <td className="px-5 py-4">
+                  <div className="flex flex-col gap-1.5">
+                    <strong className="text-sm font-semibold text-slate-800">
+                      {reservation.resource || "Unnamed resource"}
+                    </strong>
+
+                    <span className="text-xs text-slate-500">
+                      {reservation.category || "Uncategorized"}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-xs text-gray-500">
+
+                    <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
                       <MapPin size={12} />
-                      {reservation.location}
+                      {reservation.location || "Location not specified"}
                     </span>
                   </div>
                 </td>
 
-                <td>
+                {/* Requester */}
+                <td className="px-5 py-4">
                   <div className="flex flex-col gap-1">
-                    <strong>{reservation.requestedBy}</strong>
-                    <span className="text-xs text-gray-500">
-                      {reservation.department}
+                    <strong className="text-sm font-medium text-slate-700">
+                      {reservation.requestedBy || "Unknown requester"}
+                    </strong>
+
+                    <span className="text-xs text-slate-500">
+                      {reservation.department || "No department"}
                     </span>
                   </div>
                 </td>
 
-                <td>
-                  <span className="inline-flex items-center gap-1">
-                    <CalendarDays size={14} />
+                {/* Date */}
+                <td className="px-5 py-4">
+                  <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-700">
+                    <CalendarDays size={15} className="text-slate-400" />
                     {formatDate(reservation.date)}
                   </span>
                 </td>
 
-                <td>
-                  <div className="flex flex-col gap-1">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock3 size={14} />
-                      {formatTime(reservation.startTime)}
+                {/* Schedule */}
+                <td className="px-5 py-4">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium text-slate-700">
+                      <Clock3 size={15} className="text-slate-400" />
+                      {formatTime(reservation.startTime) || "Not scheduled"}
                     </span>
-                    <span className="text-xs text-gray-500">
-                      to {formatTime(reservation.endTime)}
+
+                    <span className="pl-[23px] text-xs text-slate-400">
+                      to {formatTime(reservation.endTime) || "—"}
                     </span>
                   </div>
                 </td>
 
-                <td>
+                {/* Status */}
+                <td className="px-5 py-4">
                   <ReservationStatusBadge status={reservation.status} />
                 </td>
 
-                <td>
+                {/* Actions */}
+                <td className="px-5 py-4">
                   {(reservation.status === "Pending" ||
                     reservation.status === "Approved") && (
                     <button
                       type="button"
                       onClick={() => onCancel(reservation.id)}
-                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                      aria-label={`Cancel reservation for ${reservation.resource}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-red-100 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                     >
                       <Ban size={14} />
                       Cancel
@@ -128,13 +177,13 @@ export function ReservationTable({
                   )}
 
                   {reservation.status === "Cancelled" && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs font-medium text-slate-400">
                       Cancelled
                     </span>
                   )}
 
                   {reservation.status === "Rejected" && (
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs font-medium text-slate-400">
                       No action
                     </span>
                   )}
@@ -142,18 +191,43 @@ export function ReservationTable({
               </tr>
             ))}
 
+            {/* Empty state */}
             {reservations.length === 0 && (
               <tr>
-                <td colSpan={6}>
-                  <div className="flex flex-col items-center gap-2 py-10 text-center">
-                    <PackageSearch
-                      size={30}
-                      className="text-gray-400"
-                    />
-                    <strong>No reservations found</strong>
-                    <span className="text-sm text-gray-500">
-                      Try changing your search or status filter.
-                    </span>
+                <td colSpan={6} className="px-5 py-16">
+                  <div className="mx-auto flex max-w-sm flex-col items-center gap-3 text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                      {search ? (
+                        <Search size={25} />
+                      ) : (
+                        <PackageSearch size={25} />
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-800">
+                        No reservations found
+                      </h3>
+
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                        {search || statusFilter !== "All statuses"
+                          ? "No records match your current search or status filter. Try changing your filters."
+                          : "There are no reservation records to display yet."}
+                      </p>
+                    </div>
+
+                    {(search || statusFilter !== "All statuses") && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSearchChange("");
+                          onStatusChange("All statuses");
+                        }}
+                        className="mt-1 rounded-lg bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                      >
+                        Clear filters
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -161,7 +235,23 @@ export function ReservationTable({
           </tbody>
         </table>
       </div>
+
+      {/* Table footer */}
+      {reservations.length > 0 && (
+        <div className="flex flex-col gap-1 border-t border-slate-100 bg-slate-50/60 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-slate-500">
+            Showing{" "}
+            <span className="font-semibold text-slate-700">
+              {reservations.length}
+            </span>{" "}
+            reservation {reservations.length === 1 ? "record" : "records"}
+          </p>
+
+          <p className="text-xs text-slate-400">
+            FacilityBook Reservation Management
+          </p>
+        </div>
+      )}
     </section>
   );
 }
-

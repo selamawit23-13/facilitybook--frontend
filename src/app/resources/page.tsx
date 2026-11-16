@@ -1,7 +1,7 @@
 ﻿
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   Plus,
   Search,
@@ -16,6 +16,9 @@ import {
   Eye,
   Pencil,
   Trash2,
+  X,
+  RotateCcw,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import { AppShell } from "@/components/layout/app-shell";
@@ -51,6 +54,9 @@ const emptyForm: Omit<Resource, "id"> = {
   status: "Available",
 };
 
+const inputClass =
+  "w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100";
+
 function StatusBadge({ status }: { status: ResourceStatus }) {
   const styles: Record<ResourceStatus, string> = {
     Available: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -58,19 +64,76 @@ function StatusBadge({ status }: { status: ResourceStatus }) {
     "Under Maintenance": "border-amber-200 bg-amber-50 text-amber-700",
   };
 
+  const dotStyles: Record<ResourceStatus, string> = {
+    Available: "bg-emerald-500",
+    Unavailable: "bg-gray-400",
+    "Under Maintenance": "bg-amber-500",
+  };
+
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${styles[status]}`}
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${styles[status]}`}
     >
+      <span className={`h-1.5 w-1.5 rounded-full ${dotStyles[status]}`} />
       {status}
     </span>
   );
 }
 
+function StatCard({
+  title,
+  value,
+  description,
+  icon,
+  iconClass,
+}: {
+  title: string;
+  value: number;
+  description: string;
+  icon: React.ReactNode;
+  iconClass: string;
+}) {
+  return (
+    <article className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-gray-500">{title}</p>
+          <p className="mt-3 text-3xl font-bold tracking-tight text-gray-900">
+            {value}
+          </p>
+        </div>
+
+        <div className={`rounded-xl p-3 ${iconClass}`}>
+          {icon}
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs text-gray-500">{description}</p>
+    </article>
+  );
+}
+
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
+        {label}
+      </p>
+      <p className="break-words text-sm font-medium text-gray-800">
+        {value}
+      </p>
+    </div>
+  );
+}
+
 export default function ResourcesPage() {
   const dispatch = useAppDispatch();
-
-  // The resource list now comes from the shared Redux store.
   const resources = useAppSelector((state) => state.resources.items);
 
   const [search, setSearch] = useState("");
@@ -98,14 +161,21 @@ export default function ResourcesPage() {
     const searchText = search.trim().toLowerCase();
 
     return resources.filter((resource) => {
+      const searchableValues = [
+        resource.name,
+        resource.description,
+        resource.category,
+        resource.building,
+        resource.floor,
+        resource.location,
+        resource.features,
+      ];
+
       const matchesSearch =
-        resource.name.toLowerCase().includes(searchText) ||
-        resource.description.toLowerCase().includes(searchText) ||
-        resource.category.toLowerCase().includes(searchText) ||
-        resource.building.toLowerCase().includes(searchText) ||
-        resource.floor.toLowerCase().includes(searchText) ||
-        resource.location.toLowerCase().includes(searchText) ||
-        resource.features.toLowerCase().includes(searchText);
+        !searchText ||
+        searchableValues.some((value) =>
+          value.toLowerCase().includes(searchText)
+        );
 
       const matchesCategory =
         categoryFilter === "All categories" ||
@@ -130,6 +200,17 @@ export default function ResourcesPage() {
   const unavailableCount = resources.filter(
     (resource) => resource.status === "Unavailable"
   ).length;
+
+  const hasActiveFilters =
+    search.trim() !== "" ||
+    categoryFilter !== "All categories" ||
+    statusFilter !== "All statuses";
+
+  function resetFilters() {
+    setSearch("");
+    setCategoryFilter("All categories");
+    setStatusFilter("All statuses");
+  }
 
   function updateForm(
     field: keyof Omit<Resource, "id">,
@@ -174,7 +255,7 @@ export default function ResourcesPage() {
     setDetailsDialogOpen(true);
   }
 
-  function saveResource(event: React.FormEvent<HTMLFormElement>) {
+  function saveResource(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
 
@@ -244,216 +325,255 @@ export default function ResourcesPage() {
 
   return (
     <AppShell>
-      <div className="fb-enterprise-dashboard">
+      <div className="space-y-7 pb-8">
         {/* Page heading */}
-        <section className="fb-page-heading">
+        <section className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div>
-            <div className="fb-eyebrow">
-              FACILITYBOOK MANAGEMENT
+            <div className="mb-2 flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-600" />
+              <span className="text-xs font-bold uppercase tracking-[0.15em] text-emerald-700">
+                FacilityBook Management
+              </span>
             </div>
 
-            <h1>Resource Management</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+              Resource Management
+            </h1>
 
-            <p>
-              Register, organize and monitor the facilities and
-              equipment available for reservation.
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
+              Register, organize and monitor the facilities and equipment
+              available for reservation.
             </p>
           </div>
 
           <Button
             type="button"
             onClick={openAddDialog}
-            className="bg-emerald-700 text-white hover:bg-emerald-800"
+            className="h-11 shrink-0 bg-emerald-700 px-5 text-white shadow-sm hover:bg-emerald-800"
           >
             <Plus size={17} />
             Add Resource
           </Button>
         </section>
 
-        {/* Summary cards */}
-        <section className="fb-stat-grid fb-module-stats">
-          <article className="fb-stat-card">
-            <div className="fb-stat-top flex items-center justify-between">
-              Total Resources
-              <Boxes size={19} />
-            </div>
+        {/* Statistics */}
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            title="Total Resources"
+            value={resources.length}
+            description="All registered facilities and equipment"
+            icon={<Boxes size={21} />}
+            iconClass="bg-blue-50 text-blue-700"
+          />
 
-            <div className="fb-stat-value">{resources.length}</div>
+          <StatCard
+            title="Available"
+            value={availableCount}
+            description="Ready for reservation"
+            icon={<CheckCircle2 size={21} />}
+            iconClass="bg-emerald-50 text-emerald-700"
+          />
 
-            <div className="fb-stat-change">
-              Registered facilities and equipment
-            </div>
-          </article>
+          <StatCard
+            title="Under Maintenance"
+            value={maintenanceCount}
+            description="Currently being serviced"
+            icon={<Wrench size={21} />}
+            iconClass="bg-amber-50 text-amber-700"
+          />
 
-          <article className="fb-stat-card">
-            <div className="fb-stat-top flex items-center justify-between">
-              Available
-              <CheckCircle2 size={19} />
-            </div>
-
-            <div className="fb-stat-value">{availableCount}</div>
-
-            <div className="fb-stat-change">
-              Ready for reservation
-            </div>
-          </article>
-
-          <article className="fb-stat-card">
-            <div className="fb-stat-top flex items-center justify-between">
-              Under Maintenance
-              <Wrench size={19} />
-            </div>
-
-            <div className="fb-stat-value">{maintenanceCount}</div>
-
-            <div className="fb-stat-change">
-              Currently being serviced
-            </div>
-          </article>
-
-          <article className="fb-stat-card">
-            <div className="fb-stat-top flex items-center justify-between">
-              Unavailable
-              <CircleAlertIcon />
-            </div>
-
-            <div className="fb-stat-value">{unavailableCount}</div>
-
-            <div className="fb-stat-change">
-              Not currently bookable
-            </div>
-          </article>
+          <StatCard
+            title="Unavailable"
+            value={unavailableCount}
+            description="Not currently bookable"
+            icon={<Building2 size={21} />}
+            iconClass="bg-gray-100 text-gray-600"
+          />
         </section>
 
-        {/* Resource records */}
-        <section className="fb-panel fb-module-panel">
-          <div className="fb-panel-heading">
+        {/* Resource table panel */}
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex flex-col justify-between gap-3 border-b border-gray-100 px-5 py-5 sm:flex-row sm:items-center">
             <div>
-              <h2>Registered Resources</h2>
-              <p>
+              <h2 className="text-lg font-bold text-gray-900">
+                Registered Resources
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
                 View and manage the resources registered in FacilityBook.
               </p>
             </div>
 
-            <span className="fb-period-label">
-              {filteredResources.length} records
-            </span>
+            <div className="flex items-center gap-2 self-start rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 sm:self-center">
+              <Boxes size={14} />
+              {filteredResources.length} of {resources.length} records
+            </div>
           </div>
 
           {/* Search and filters */}
-          <div className="flex flex-col gap-3 px-4 pb-4 md:flex-row">
-            <div className="relative min-w-0 flex-1">
-              <Search
-                size={18}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search resource, building or feature..."
-                className="form-input w-full pl-10"
-              />
+          <div className="space-y-3 border-b border-gray-100 bg-gray-50/70 px-5 py-4">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <SlidersHorizontal size={14} />
+              Search and filters
             </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
-              className="form-input min-w-40"
-              aria-label="Filter resources by category"
-            >
-              <option>All categories</option>
+            <div className="flex flex-col gap-3 lg:flex-row">
+              <div className="relative min-w-0 flex-1">
+                <Search
+                  size={17}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
 
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search by resource, building, category or feature..."
+                  className={`${inputClass} pl-10 pr-10`}
+                  aria-label="Search resources"
+                />
 
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-              className="form-input min-w-40"
-              aria-label="Filter resources by status"
-            >
-              <option>All statuses</option>
-              <option>Available</option>
-              <option>Unavailable</option>
-              <option>Under Maintenance</option>
-            </select>
+                {search && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                className={`${inputClass} lg:w-48`}
+                aria-label="Filter resources by category"
+              >
+                <option>All categories</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className={`${inputClass} lg:w-48`}
+                aria-label="Filter resources by status"
+              >
+                <option>All statuses</option>
+                <option>Available</option>
+                <option>Unavailable</option>
+                <option>Under Maintenance</option>
+              </select>
+
+              {hasActiveFilters && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetFilters}
+                  className="h-11 shrink-0 border-gray-200 bg-white text-gray-600 hover:bg-gray-100"
+                >
+                  <RotateCcw size={15} />
+                  Reset
+                </Button>
+              )}
+            </div>
           </div>
 
-          {/* Resource table */}
-          <div className="fb-table-wrap">
-            <table className="fb-table fb-module-table">
+          {/* Table */}
+          <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[950px] text-left">
               <thead>
-                <tr>
-                  <th>RESOURCE</th>
-                  <th>CATEGORY</th>
-                  <th>LOCATION</th>
-                  <th>CAPACITY</th>
-                  <th>OPERATING HOURS</th>
-                  <th>STATUS</th>
-                  <th>ACTIONS</th>
+                <tr className="border-b border-gray-100 bg-gray-50/70">
+                  <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Resource
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Category
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Location
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Capacity
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Operating Hours
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Status
+                  </th>
+                  <th className="px-4 py-4 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {filteredResources.map((resource) => (
-                  <tr key={resource.id}>
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        <strong>{resource.name}</strong>
-
-                        <span className="max-w-52 text-xs text-gray-500">
+                  <tr
+                    key={resource.id}
+                    className="transition-colors hover:bg-emerald-50/30"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="flex min-w-48 flex-col gap-1">
+                        <strong className="text-sm font-semibold text-gray-900">
+                          {resource.name}
+                        </strong>
+                        <span className="max-w-56 text-xs leading-5 text-gray-500">
                           {resource.description || "No description provided"}
                         </span>
                       </div>
                     </td>
 
-                    <td>{resource.category}</td>
+                    <td className="px-4 py-4">
+                      <span className="inline-flex rounded-md bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-700">
+                        {resource.category}
+                      </span>
+                    </td>
 
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1">
-                          <Building2 size={13} />
+                    <td className="px-4 py-4">
+                      <div className="flex min-w-40 flex-col gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-800">
+                          <Building2 size={14} className="text-gray-400" />
                           {resource.building}
                         </span>
-
-                        <span className="inline-flex items-center gap-1 text-xs text-gray-500">
-                          <MapPin size={12} />
+                        <span className="inline-flex items-center gap-1.5 text-xs text-gray-500">
+                          <MapPin size={13} />
                           {resource.floor} · {resource.location}
                         </span>
                       </div>
                     </td>
 
-                    <td>
-                      <span className="inline-flex items-center gap-1">
-                        <Users size={14} />
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center gap-1.5 text-sm text-gray-700">
+                        <Users size={15} className="text-gray-400" />
                         {resource.capacity}
                       </span>
                     </td>
 
-                    <td>
-                      <span className="inline-flex items-center gap-1 text-sm">
-                        <Clock3 size={14} />
+                    <td className="px-4 py-4">
+                      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-gray-600">
+                        <Clock3 size={14} className="text-gray-400" />
                         {resource.operatingHours}
                       </span>
                     </td>
 
-                    <td>
+                    <td className="px-4 py-4">
                       <StatusBadge status={resource.status} />
                     </td>
 
-                    <td>
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
                           title="View resource"
                           aria-label={`View ${resource.name}`}
                           onClick={() => openDetailsDialog(resource)}
-                          className="rounded-md p-2 text-gray-500 hover:bg-emerald-50 hover:text-emerald-700"
+                          className="rounded-lg p-2 text-gray-500 transition hover:bg-emerald-100 hover:text-emerald-800"
                         >
                           <Eye size={16} />
                         </button>
@@ -463,7 +583,7 @@ export default function ResourcesPage() {
                           title="Edit resource"
                           aria-label={`Edit ${resource.name}`}
                           onClick={() => openEditDialog(resource)}
-                          className="rounded-md p-2 text-gray-500 hover:bg-blue-50 hover:text-blue-700"
+                          className="rounded-lg p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-700"
                         >
                           <Pencil size={16} />
                         </button>
@@ -473,7 +593,7 @@ export default function ResourcesPage() {
                           title="Delete resource"
                           aria-label={`Delete ${resource.name}`}
                           onClick={() => removeResource(resource)}
-                          className="rounded-md p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg p-2 text-gray-500 transition hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -484,19 +604,42 @@ export default function ResourcesPage() {
 
                 {filteredResources.length === 0 && (
                   <tr>
-                    <td colSpan={7}>
-                      <div className="flex flex-col items-center gap-2 py-10 text-center">
-                        <PackageSearch
-                          size={32}
-                          className="text-gray-400"
-                        />
+                    <td colSpan={7} className="px-5 py-16">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="mb-3 rounded-2xl bg-gray-100 p-4 text-gray-400">
+                          <PackageSearch size={30} />
+                        </div>
 
-                        <strong>No resources found</strong>
+                        <h3 className="font-semibold text-gray-800">
+                          No resources found
+                        </h3>
 
-                        <span className="text-sm text-gray-500">
-                          Try changing your search or filters, or add a new
-                          resource.
-                        </span>
+                        <p className="mt-1 max-w-sm text-sm leading-6 text-gray-500">
+                          {hasActiveFilters
+                            ? "No resources match your search or filters. Try adjusting them."
+                            : "There are no registered resources yet. Add your first resource to get started."}
+                        </p>
+
+                        {hasActiveFilters ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={resetFilters}
+                            className="mt-4"
+                          >
+                            <RotateCcw size={15} />
+                            Clear filters
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            onClick={openAddDialog}
+                            className="mt-4 bg-emerald-700 text-white hover:bg-emerald-800"
+                          >
+                            <Plus size={16} />
+                            Add Resource
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -504,71 +647,81 @@ export default function ResourcesPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Table footer */}
+          <div className="flex flex-col justify-between gap-2 border-t border-gray-100 bg-gray-50/60 px-5 py-3 text-xs text-gray-500 sm:flex-row sm:items-center">
+            <span>
+              Showing {filteredResources.length} of {resources.length} resources
+            </span>
+            <span>FacilityBook Resource Management</span>
+          </div>
         </section>
 
-        {/* Resource information */}
-        <section className="fb-panel p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Building2 size={19} className="text-emerald-700" />
-
-            <h2 className="font-semibold">Resource Information</h2>
+        {/* Information section */}
+        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+          <div className="mb-5 flex items-center gap-2">
+            <div className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
+              <Building2 size={19} />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">
+                Resource Information
+              </h2>
+              <p className="text-xs text-gray-500">
+                Understand how resources are organized and managed.
+              </p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 text-sm leading-6 text-gray-600 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 text-sm md:grid-cols-3">
             <div>
-              <strong className="text-gray-800">
+              <h3 className="mb-2 font-semibold text-gray-800">
                 Resource details
-              </strong>
-
-              <p>
-                Each resource has a name, category, description and
-                location to help employees identify the right facility
-                or equipment.
+              </h3>
+              <p className="leading-6 text-gray-500">
+                Each resource has a name, category, description and location
+                to help employees identify the right facility or equipment.
               </p>
             </div>
 
             <div>
-              <strong className="text-gray-800">
+              <h3 className="mb-2 font-semibold text-gray-800">
                 Availability status
-              </strong>
-
-              <p>
-                Resources can be available, unavailable or under
-                maintenance. Only available resources should be offered
-                for new reservations.
+              </h3>
+              <p className="leading-6 text-gray-500">
+                Resources can be available, unavailable or under maintenance.
+                Only available resources should be offered for new reservations.
               </p>
             </div>
 
             <div>
-              <strong className="text-gray-800">
+              <h3 className="mb-2 font-semibold text-gray-800">
                 Reservation planning
-              </strong>
-
-              <p>
-                Capacity, operating hours and resource features help
-                employees choose an appropriate resource for their needs.
+              </h3>
+              <p className="leading-6 text-gray-500">
+                Capacity, operating hours and resource features help employees
+                choose an appropriate resource for their needs.
               </p>
             </div>
           </div>
         </section>
 
-        <footer className="fb-footer">
-          FacilityBook <span>•</span> Resource Management
-          <span>•</span> Demonstration data
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 pt-4 text-xs text-gray-400">
+          <span>FacilityBook · Resource Management</span>
+          <span>Facility and Resource Administration</span>
         </footer>
       </div>
 
-      {/* View resource details dialog */}
+      {/* View resource details */}
       <Dialog
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="text-xl">
               Resource Information
             </DialogTitle>
-
             <DialogDescription>
               View the details and current availability of this resource.
             </DialogDescription>
@@ -581,7 +734,6 @@ export default function ResourcesPage() {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {selectedResource.name}
                   </h3>
-
                   <p className="text-sm text-gray-500">
                     {selectedResource.category}
                   </p>
@@ -590,32 +742,27 @@ export default function ResourcesPage() {
                 <StatusBadge status={selectedResource.status} />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <DetailItem
                   label="Building"
                   value={selectedResource.building}
                 />
-
                 <DetailItem
                   label="Floor"
                   value={selectedResource.floor}
                 />
-
                 <DetailItem
                   label="Location"
                   value={selectedResource.location}
                 />
-
                 <DetailItem
                   label="Capacity"
                   value={String(selectedResource.capacity)}
                 />
-
                 <DetailItem
                   label="Operating Hours"
                   value={selectedResource.operatingHours}
                 />
-
                 <DetailItem
                   label="Features"
                   value={selectedResource.features || "Not specified"}
@@ -626,7 +773,6 @@ export default function ResourcesPage() {
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Description
                 </p>
-
                 <p className="text-sm leading-6 text-gray-700">
                   {selectedResource.description || "No description provided."}
                 </p>
@@ -655,7 +801,7 @@ export default function ResourcesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Add and edit resource dialog */}
+      {/* Add and edit resource */}
       <Dialog
         open={formDialogOpen}
         onOpenChange={setFormDialogOpen}
@@ -663,12 +809,12 @@ export default function ResourcesPage() {
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              {editingResourceId !== null ? "Edit Resource" : "Add New Resource"}
+              {editingResourceId !== null
+                ? "Edit Resource"
+                : "Add New Resource"}
             </DialogTitle>
-
             <DialogDescription>
-              Enter the resource details, location and availability
-              information.
+              Enter the resource details, location and availability information.
             </DialogDescription>
           </DialogHeader>
 
@@ -682,9 +828,8 @@ export default function ResourcesPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Resource Name *
-
                   <input
-                    className="form-input"
+                    className={inputClass}
                     value={form.name}
                     onChange={(event) =>
                       updateForm("name", event.target.value)
@@ -696,9 +841,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Category *
-
                   <select
-                    className="form-input"
+                    className={inputClass}
                     value={form.category}
                     onChange={(event) =>
                       updateForm("category", event.target.value)
@@ -717,9 +861,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">
                   Description
-
                   <textarea
-                    className="form-input min-h-20"
+                    className={`${inputClass} min-h-20`}
                     value={form.description}
                     onChange={(event) =>
                       updateForm("description", event.target.value)
@@ -739,9 +882,8 @@ export default function ResourcesPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Building *
-
                   <input
-                    className="form-input"
+                    className={inputClass}
                     value={form.building}
                     onChange={(event) =>
                       updateForm("building", event.target.value)
@@ -753,9 +895,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Floor *
-
                   <input
-                    className="form-input"
+                    className={inputClass}
                     value={form.floor}
                     onChange={(event) =>
                       updateForm("floor", event.target.value)
@@ -767,9 +908,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Specific Location *
-
                   <input
-                    className="form-input"
+                    className={inputClass}
                     value={form.location}
                     onChange={(event) =>
                       updateForm("location", event.target.value)
@@ -781,9 +921,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Capacity *
-
                   <input
-                    className="form-input"
+                    className={inputClass}
                     type="number"
                     min="1"
                     step="1"
@@ -811,9 +950,8 @@ export default function ResourcesPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Operating Hours
-
                   <input
-                    className="form-input"
+                    className={inputClass}
                     value={form.operatingHours}
                     onChange={(event) =>
                       updateForm("operatingHours", event.target.value)
@@ -824,9 +962,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium">
                   Resource Status
-
                   <select
-                    className="form-input"
+                    className={inputClass}
                     value={form.status}
                     onChange={(event) =>
                       updateForm(
@@ -845,9 +982,8 @@ export default function ResourcesPage() {
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">
                   Equipment and Features
-
                   <textarea
-                    className="form-input min-h-20"
+                    className={`${inputClass} min-h-20`}
                     value={form.features}
                     onChange={(event) =>
                       updateForm("features", event.target.value)
@@ -859,7 +995,10 @@ export default function ResourcesPage() {
             </section>
 
             {error && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              <p
+                role="alert"
+                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
                 {error}
               </p>
             )}
@@ -895,28 +1034,4 @@ export default function ResourcesPage() {
       </Dialog>
     </AppShell>
   );
-}
-
-function DetailItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-      <p className="mb-1 text-xs font-medium uppercase tracking-wide text-gray-500">
-        {label}
-      </p>
-
-      <p className="break-words text-sm font-medium text-gray-800">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function CircleAlertIcon() {
-  return <span className="text-lg font-semibold text-gray-500">!</span>;
 }
