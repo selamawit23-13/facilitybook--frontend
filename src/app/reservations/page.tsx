@@ -3,9 +3,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
-
 import { AppShell } from "@/components/layout/app-shell";
-
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import type { ReservationFilter } from "@/features/reservations/reservationTypes";
@@ -15,6 +13,7 @@ import { ReservationStats } from "@/components/reservations/reservation-stats";
 import { ReservationTable } from "@/components/reservations/reservation-table";
 import { ReservationGuidelines } from "@/components/reservations/reservation-guidelines";
 import { NewReservationDialog } from "@/components/reservations/new-reservation-dialog";
+
 import {
   addReservation,
   cancelReservation,
@@ -78,13 +77,14 @@ function formatTime(time: string) {
 export default function ReservationsPage() {
   const dispatch = useAppDispatch();
 
-  // Reservations now come from the shared Redux store.
   const reservations = useAppSelector(
     (state) => state.reservations.items
   );
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ReservationFilter>("All statuses");
+  const [statusFilter, setStatusFilter] =
+    useState<ReservationFilter>("All statuses");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState("");
@@ -137,6 +137,8 @@ export default function ReservationsPage() {
       ...current,
       [field]: value,
     }));
+
+    setError("");
   }
 
   function openNewReservation() {
@@ -184,7 +186,6 @@ export default function ReservationsPage() {
       return;
     }
 
-    // Check for overlapping pending or approved demo reservations.
     const hasConflict = reservations.some((reservation) => {
       if (
         reservation.resource !== form.resource ||
@@ -208,7 +209,6 @@ export default function ReservationsPage() {
       return;
     }
 
-    // Add the new reservation to the shared Redux store.
     dispatch(
       addReservation({
         resource: selectedResource.name,
@@ -242,19 +242,17 @@ export default function ReservationsPage() {
   return (
     <AppShell>
       <div className="fb-enterprise-dashboard">
-
-        {/* Page heading */}
         <ReservationPageHeader
           onNewReservation={openNewReservation}
         />
-        {/* Summary cards */}
+
         <ReservationStats
           total={reservations.length}
           upcoming={upcomingCount}
           pending={pendingCount}
           approved={approvedCount}
         />
-        {/* Reservation records */}
+
         <ReservationTable
           reservations={filteredReservations}
           search={search}
@@ -265,26 +263,26 @@ export default function ReservationsPage() {
           formatDate={formatDate}
           formatTime={formatTime}
         />
-        {/* Reservation information */}
+
         <ReservationGuidelines />
+
         <footer className="fb-footer">
           FacilityBook <span>•</span> Reservation Management
           <span>•</span> Demonstration data
         </footer>
-
       </div>
 
-      {/* New Reservation dialog */}
       <NewReservationDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         form={form}
         resourceOptions={resourceOptions}
+        reservations={reservations}
         today={today}
         error={error}
         onSubmit={addNewReservation}
         onUpdate={updateForm}
-      />    </AppShell>
+      />
+    </AppShell>
   );
 }
-

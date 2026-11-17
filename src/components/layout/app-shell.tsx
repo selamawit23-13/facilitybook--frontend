@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { logout as logoutAction } from "@/features/auth/authSlice";
+
 import {
   LayoutDashboard,
   Building2,
@@ -24,51 +27,130 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const navigation = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+type UserRole =
+  | "ADMIN"
+  | "EMPLOYEE"
+  | "FACILITY_MANAGER"
+  | "DEPARTMENT_MANAGER"
+  | "RESOURCE_OPERATOR";
+
+const navigationByRole: Record<
+  UserRole,
   {
-    label: "Facilities & Resources",
-    href: "/resources",
-    icon: Building2,
-    expandable: true,
-  },
-  { label: "Reservations", href: "/reservations", icon: CalendarDays },
-  { label: "Approvals", href: "/approvals", icon: ClipboardCheck },
-  { label: "Maintenance", href: "/maintenance", icon: Wrench },
-  { label: "Users", href: "/users", icon: Users },
-  { label: "Reports", href: "/reports", icon: ChartNoAxesCombined },
-];
+    label: string;
+    href: string;
+    icon: typeof LayoutDashboard;
+  }[]
+> = {
+  ADMIN: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Facilities & Resources", href: "/resources", icon: Building2 },
+    { label: "Reservations", href: "/reservations", icon: CalendarDays },
+    { label: "Users", href: "/users", icon: Users },
+    { label: "Reports", href: "/reports", icon: ChartNoAxesCombined },
+  ],
+
+  EMPLOYEE: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Facilities & Resources", href: "/resources", icon: Building2 },
+    { label: "Reservations", href: "/reservations", icon: CalendarDays },
+  ],
+
+  FACILITY_MANAGER: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Facilities & Resources", href: "/resources", icon: Building2 },
+    { label: "Reservations", href: "/reservations", icon: CalendarDays },
+    { label: "Approvals", href: "/approvals", icon: ClipboardCheck },
+    { label: "Maintenance", href: "/maintenance", icon: Wrench },
+    { label: "Reports", href: "/reports", icon: ChartNoAxesCombined },
+  ],
+
+  DEPARTMENT_MANAGER: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Facilities & Resources", href: "/resources", icon: Building2 },
+    { label: "Reservations", href: "/reservations", icon: CalendarDays },
+    { label: "Approvals", href: "/approvals", icon: ClipboardCheck },
+    { label: "Reports", href: "/reports", icon: ChartNoAxesCombined },
+  ],
+
+  RESOURCE_OPERATOR: [
+    { label: "Dashboard", href: "/", icon: LayoutDashboard },
+    { label: "Facilities & Resources", href: "/resources", icon: Building2 },
+    { label: "Reservations", href: "/reservations", icon: CalendarDays },
+    { label: "Maintenance", href: "/maintenance", icon: Wrench },
+  ],
+};
+
+function normalizeRole(role?: string): UserRole {
+  const normalized = role?.replace(/^ROLE_/, "").toUpperCase();
+
+  if (
+    normalized === "ADMIN" ||
+    normalized === "EMPLOYEE" ||
+    normalized === "FACILITY_MANAGER" ||
+    normalized === "DEPARTMENT_MANAGER" ||
+    normalized === "RESOURCE_OPERATOR"
+  ) {
+    return normalized;
+  }
+
+  return "EMPLOYEE";
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  const isAuthenticated = useAppSelector(
+    (state) => state.auth.isAuthenticated
+  );
+
+  const user = useAppSelector((state) => state.auth.user);
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
 
-  // Close the mobile sidebar whenever the user changes pages.
+  const role = normalizeRole(user?.role);
+  const navigation = navigationByRole[role];
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, router]);
+
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
   function logout() {
+    localStorage.removeItem("facilitybook_token");
+    localStorage.removeItem("facilitybook_user");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
 
-    router.push("/login");
+    dispatch(logoutAction());
+    router.replace("/login");
   }
 
   function isActive(href: string) {
-    if (href === "/") {
-      return pathname === "/";
-    }
-
+    if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-sm text-muted-foreground">
+          Redirecting to login...
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="fb-shell fb-green-theme">
-      {/* Mobile navigation overlay */}
       {mobileOpen && (
         <button
           type="button"
@@ -78,12 +160,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fb-sidebar ${mobileOpen ? "fb-sidebar-open" : ""}`}
         aria-label="Main navigation"
       >
-        {/* Brand */}
         <div className="fb-brand">
           <div className="fb-brand-icon">
             <Building2 size={29} strokeWidth={2.3} />
@@ -101,10 +181,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {/* Navigation label */}
         <div className="fb-nav-label">MENU</div>
 
-        {/* Main navigation */}
         <nav className="fb-navigation">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -121,10 +199,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 aria-current={active ? "page" : undefined}
               >
                 <Icon size={21} strokeWidth={2.2} />
-
                 <span>{item.label}</span>
 
-                {item.expandable && (
+                {item.href === "/resources" && (
                   <ChevronRight
                     className="fb-nav-chevron"
                     size={17}
@@ -132,7 +209,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   />
                 )}
 
-                {item.label === "Approvals" && (
+                {item.href === "/approvals" && (
                   <span className="fb-nav-count">5</span>
                 )}
               </Link>
@@ -140,14 +217,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Sidebar help card */}
         <div className="fb-sidebar-help">
           <div className="fb-help-icon">
             <Sparkles size={20} />
           </div>
 
           <strong>Smart Facility Management</strong>
-
           <span>Book · Manage · Optimize</span>
 
           <Link href="/reports" className="fb-help-button">
@@ -156,22 +231,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </div>
 
-        {/* Sidebar bottom */}
         <div className="fb-sidebar-bottom">
           <div className="fb-system-navigation">
-            <Link
-              href="/settings"
-              className={`fb-nav-link ${
-                isActive("/settings") ? "fb-nav-active" : ""
-              }`}
-              aria-current={
-                isActive("/settings") ? "page" : undefined
-              }
-              onClick={() => setMobileOpen(false)}
-            >
-              <Settings size={20} />
-              <span>Settings</span>
-            </Link>
+            {role === "ADMIN" && (
+              <Link
+                href="/settings"
+                className={`fb-nav-link ${
+                  isActive("/settings") ? "fb-nav-active" : ""
+                }`}
+                aria-current={
+                  isActive("/settings") ? "page" : undefined
+                }
+                onClick={() => setMobileOpen(false)}
+              >
+                <Settings size={20} />
+                <span>Settings</span>
+              </Link>
+            )}
           </div>
 
           <button
@@ -185,9 +261,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="fb-main">
-        {/* Topbar */}
         <header className="fb-topbar">
           <div className="fb-topbar-left">
             <button
@@ -200,7 +274,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Menu size={23} />
             </button>
 
-            {/* Search */}
             <label className="fb-search">
               <Search size={21} />
 
@@ -216,7 +289,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </label>
           </div>
 
-          {/* Topbar actions */}
           <div className="fb-topbar-actions">
             <Link
               href="/notifications"
@@ -237,19 +309,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             <div className="fb-top-divider" />
 
-            {/* User profile */}
             <div className="fb-admin-profile">
-              <div className="fb-top-avatar">SH</div>
+              <div className="fb-top-avatar">
+                {user?.fullName
+                  ?.split(" ")
+                  .map((part) => part[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "U"}
+              </div>
 
               <div className="fb-admin-details">
-                <strong>Selamawit Hailu</strong>
-                <span>ADMIN</span>
+                <strong>{user?.fullName || "User"}</strong>
+                <span>{role.replaceAll("_", " ")}</span>
               </div>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <div className="fb-content">{children}</div>
       </main>
     </div>

@@ -1,5 +1,9 @@
-﻿import type { FormEvent } from "react";
-import type { Reservation, ReservationStatus } from "@/features/reservations/reservationSlice";
+﻿
+import type { FormEvent } from "react";
+import type {
+  Reservation,
+  ReservationStatus,
+} from "@/features/reservations/reservationSlice";
 
 export interface ReservationFormData {
   resource: string;
@@ -18,11 +22,18 @@ export interface ResourceOption {
 
 export type ReservationFilter = ReservationStatus | "All statuses";
 
+export interface ResourceFilters {
+  category: string;
+  location: string;
+  minimumCapacity: string;
+}
+
 export interface ReservationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   form: ReservationFormData;
   resourceOptions: ResourceOption[];
+  reservations: Reservation[];
   today: string;
   error: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;

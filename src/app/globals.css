@@ -1413,3 +1413,282 @@
     margin-left: 0 !important;
   }
 }
+/* =========================================================
+   FACILITYBOOK - FINAL TOPBAR ALIGNMENT FIX
+   Keep this block at the VERY BOTTOM of globals.css
+   ========================================================= */
+
+/* Main application layout */
+.fb-shell.fb-green-theme {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Main content area */
+.fb-green-theme .fb-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: calc(100% - 264px);
+  margin-left: 264px;
+  box-sizing: border-box;
+}
+
+/* Topbar: one horizontal row */
+.fb-green-theme .fb-topbar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+
+  width: 100%;
+  min-width: 0;
+  min-height: 76px;
+  height: 76px;
+
+  padding: 0 34px;
+  gap: 24px;
+
+  box-sizing: border-box;
+  position: relative;
+  z-index: 20;
+}
+
+/* Left side: menu + search */
+.fb-green-theme .fb-topbar-left {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+
+  flex: 1 1 auto !important;
+  min-width: 0;
+  width: auto;
+
+  gap: 18px;
+}
+
+/* Search field */
+.fb-green-theme .fb-search {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+
+  flex: 0 1 555px !important;
+  width: 100%;
+  max-width: 555px;
+  min-width: 180px;
+
+  height: 50px;
+  padding: 0 16px;
+  gap: 12px;
+
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+/* Search input */
+.fb-green-theme .fb-search input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+
+  border: none;
+  outline: none;
+  background: transparent;
+
+  font: inherit;
+}
+
+/* Keyboard shortcut */
+.fb-green-theme .fb-search kbd {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Right side: notifications + messages + profile */
+.fb-green-theme .fb-topbar-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: nowrap !important;
+
+  flex: 0 0 auto !important;
+  width: auto;
+  min-width: max-content;
+
+  margin-left: auto;
+  gap: 14px;
+
+  box-sizing: border-box;
+}
+
+/* Keep notification and message buttons in place */
+.fb-green-theme .fb-top-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+}
+
+/* Divider */
+.fb-green-theme .fb-topbar-divider {
+  flex: 0 0 1px;
+  align-self: center;
+}
+
+/* Profile section */
+.fb-green-theme .fb-admin-profile {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+
+  flex: 0 0 auto !important;
+  min-width: max-content;
+
+  gap: 10px;
+  white-space: nowrap;
+}
+
+/* Profile text */
+.fb-green-theme .fb-admin-profile > div {
+  min-width: 0;
+}
+
+/* Avatar */
+.fb-green-theme .fb-admin-avatar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Prevent children from stretching vertically */
+.fb-green-theme .fb-topbar-left > *,
+.fb-green-theme .fb-topbar-actions > * {
+  align-self: center;
+}
+
+/* =========================================================
+   TABLET RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1100px) {
+  .fb-green-theme .fb-topbar {
+    padding: 0 22px;
+    gap: 16px;
+  }
+
+  .fb-green-theme .fb-search {
+    max-width: 420px;
+  }
+
+  .fb-green-theme .fb-topbar-actions {
+    gap: 10px;
+  }
+}
+
+/* =========================================================
+   MOBILE RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .fb-green-theme .fb-main {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .fb-green-theme .fb-topbar {
+    min-height: 68px;
+    height: 68px;
+    padding: 0 16px;
+    gap: 10px;
+  }
+
+  .fb-green-theme .fb-topbar-left {
+    flex: 1 1 auto !important;
+    gap: 10px;
+  }
+
+  .fb-green-theme .fb-search {
+    flex: 1 1 auto !important;
+    max-width: none;
+    min-width: 0;
+    height: 42px;
+  }
+
+  .fb-green-theme .fb-topbar-actions {
+    flex: 0 0 auto !important;
+    gap: 9px;
+  }
+
+  .fb-green-theme .fb-admin-profile {
+    min-width: 0;
+    gap: 7px;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 520px) {
+  .fb-green-theme .fb-topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .fb-green-theme .fb-search {
+    min-width: 0;
+    max-width: none;
+    padding: 0 10px;
+  }
+
+  .fb-green-theme .fb-search kbd {
+    display: none;
+  }
+
+  .fb-green-theme .fb-topbar-actions {
+    gap: 7px;
+  }
+
+  .fb-green-theme .fb-admin-profile {
+    gap: 0;
+  }
+
+  .fb-green-theme .fb-admin-profile > div {
+    display: none;
+  }
+
+  .fb-green-theme .fb-topbar-divider {
+    display: none;
+  }
+}
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+  .fb-green-theme .fb-topbar {
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .fb-green-theme .fb-topbar-actions {
+    gap: 5px;
+  }
+
+  .fb-green-theme .fb-search {
+    height: 38px;
+  }
+}

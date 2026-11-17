@@ -41,6 +41,16 @@ import {
   type ResourceStatus,
 } from "@/features/resources/resourceSlice";
 
+const availableWeekdays = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
 const emptyForm: Omit<Resource, "id"> = {
   name: "",
   description: "",
@@ -51,6 +61,7 @@ const emptyForm: Omit<Resource, "id"> = {
   capacity: 1,
   features: "",
   operatingHours: "08:00 - 17:00",
+  availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
   status: "Available",
 };
 
@@ -149,7 +160,11 @@ export default function ResourcesPage() {
   const [editingResourceId, setEditingResourceId] =
     useState<number | null>(null);
 
-  const [form, setForm] = useState<Omit<Resource, "id">>(emptyForm);
+  const [form, setForm] = useState<Omit<Resource, "id">>({
+    ...emptyForm,
+    availableDays: [...emptyForm.availableDays],
+  });
+
   const [error, setError] = useState("");
 
   const categories = useMemo(
@@ -214,7 +229,7 @@ export default function ResourcesPage() {
 
   function updateForm(
     field: keyof Omit<Resource, "id">,
-    value: string | number
+    value: string | number | string[]
   ) {
     setForm((current) => ({
       ...current,
@@ -222,9 +237,21 @@ export default function ResourcesPage() {
     }));
   }
 
+  function toggleAvailableDay(day: string) {
+    setForm((current) => ({
+      ...current,
+      availableDays: current.availableDays.includes(day)
+        ? current.availableDays.filter((item) => item !== day)
+        : [...current.availableDays, day],
+    }));
+  }
+
   function openAddDialog() {
     setEditingResourceId(null);
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      availableDays: [...emptyForm.availableDays],
+    });
     setError("");
     setFormDialogOpen(true);
   }
@@ -242,6 +269,7 @@ export default function ResourcesPage() {
       capacity: resource.capacity,
       features: resource.features,
       operatingHours: resource.operatingHours,
+      availableDays: [...(resource.availableDays ?? [])],
       status: resource.status,
     });
 
@@ -274,6 +302,11 @@ export default function ResourcesPage() {
       return;
     }
 
+    if (form.availableDays.length === 0) {
+      setError("Please select at least one available day.");
+      return;
+    }
+
     const resourceData: Omit<Resource, "id"> = {
       name: form.name.trim(),
       description: form.description.trim(),
@@ -284,6 +317,7 @@ export default function ResourcesPage() {
       capacity: form.capacity,
       features: form.features.trim(),
       operatingHours: form.operatingHours.trim(),
+      availableDays: [...form.availableDays],
       status: form.status,
     };
 
@@ -303,7 +337,10 @@ export default function ResourcesPage() {
       );
     }
 
-    setForm(emptyForm);
+    setForm({
+      ...emptyForm,
+      availableDays: [...emptyForm.availableDays],
+    });
     setEditingResourceId(null);
     setFormDialogOpen(false);
   }
@@ -764,6 +801,13 @@ export default function ResourcesPage() {
                   value={selectedResource.operatingHours}
                 />
                 <DetailItem
+                  label="Available Days"
+                  value={
+                    (selectedResource.availableDays ?? []).join(", ") ||
+                    "Not specified"
+                  }
+                />
+                <DetailItem
                   label="Features"
                   value={selectedResource.features || "Not specified"}
                 />
@@ -979,6 +1023,38 @@ export default function ResourcesPage() {
                     </option>
                   </select>
                 </label>
+
+                {/* Available Days */}
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-medium">
+                    Available Days *
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {availableWeekdays.map((day) => (
+                      <label
+                        key={day}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm transition ${
+                          form.availableDays.includes(day)
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                            : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.availableDays.includes(day)}
+                          onChange={() => toggleAvailableDay(day)}
+                          className="h-4 w-4 accent-emerald-700"
+                        />
+                        {day}
+                      </label>
+                    ))}
+                  </div>
+
+                  <p className="mt-2 text-xs text-gray-500">
+                    Select the days when this resource can be reserved.
+                  </p>
+                </div>
 
                 <label className="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">
                   Equipment and Features

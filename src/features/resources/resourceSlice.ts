@@ -17,8 +17,17 @@ export interface Resource {
   capacity: number;
   features: string;
   operatingHours: string;
+  availableDays: string[];
   status: ResourceStatus;
 }
+
+const weekdays = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+];
 
 const initialResources: Resource[] = [
   {
@@ -32,6 +41,7 @@ const initialResources: Resource[] = [
     capacity: 20,
     features: "Projector, Wi-Fi, Video Conference",
     operatingHours: "08:00 - 18:00",
+    availableDays: [...weekdays],
     status: "Available",
   },
   {
@@ -45,6 +55,7 @@ const initialResources: Resource[] = [
     capacity: 35,
     features: "Computers, Projector, Wi-Fi",
     operatingHours: "08:00 - 17:00",
+    availableDays: [...weekdays],
     status: "Available",
   },
   {
@@ -58,6 +69,7 @@ const initialResources: Resource[] = [
     capacity: 100,
     features: "Sound System, Projector, Microphones",
     operatingHours: "07:00 - 20:00",
+    availableDays: [...weekdays],
     status: "Available",
   },
   {
@@ -71,6 +83,7 @@ const initialResources: Resource[] = [
     capacity: 12,
     features: "Display Screen, Wi-Fi",
     operatingHours: "08:00 - 17:00",
+    availableDays: [...weekdays],
     status: "Under Maintenance",
   },
   {
@@ -84,6 +97,7 @@ const initialResources: Resource[] = [
     capacity: 1,
     features: "HDMI, Wireless Connection",
     operatingHours: "08:00 - 17:00",
+    availableDays: [...weekdays],
     status: "Unavailable",
   },
 ];

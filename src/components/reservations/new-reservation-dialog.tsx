@@ -1,6 +1,9 @@
-﻿"use client";
+﻿
+"use client";
 
-import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, SlidersHorizontal } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,21 +13,131 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { ReservationDialogProps } from "@/features/reservations/reservationTypes";
+
+import type {
+  ReservationDialogProps,
+  ResourceFilters,
+} from "@/features/reservations/reservationTypes";
+
+const emptyFilters: ResourceFilters = {
+  category: "All types",
+  location: "All locations",
+  minimumCapacity: "",
+};
 
 export function NewReservationDialog({
   open,
   onOpenChange,
   form,
   resourceOptions,
+  reservations,
   today,
   error,
   onSubmit,
   onUpdate,
 }: ReservationDialogProps) {
+  const [filters, setFilters] = useState<ResourceFilters>(emptyFilters);
+  const [showOnlyAvailable, setShowOnlyAvailable] = useState(false);
+
+  const categories = useMemo(
+    () => Array.from(new Set(resourceOptions.map((item) => item.category))),
+    [resourceOptions]
+  );
+
+  const locations = useMemo(
+    () => Array.from(new Set(resourceOptions.map((item) => item.location))),
+    [resourceOptions]
+  );
+
+  function isAvailable(resourceName: string) {
+    if (
+      !form.date ||
+      !form.startTime ||
+      !form.endTime ||
+      form.endTime <= form.startTime
+    ) {
+      return true;
+    }
+
+    return !reservations.some((reservation) => {
+      if (
+        reservation.resource !== resourceName ||
+        reservation.date !== form.date ||
+        (reservation.status !== "Pending" &&
+          reservation.status !== "Approved")
+      ) {
+        return false;
+      }
+
+      return (
+        form.startTime < reservation.endTime &&
+        form.endTime > reservation.startTime
+      );
+    });
+  }
+
+  const filteredResources = useMemo(() => {
+    const minimumCapacity = Number(filters.minimumCapacity);
+
+    return resourceOptions.filter((resource) => {
+      const matchesCategory =
+        filters.category === "All types" ||
+        resource.category === filters.category;
+
+      const matchesLocation =
+        filters.location === "All locations" ||
+        resource.location === filters.location;
+
+      const matchesCapacity =
+        !filters.minimumCapacity ||
+        resource.capacity >= minimumCapacity;
+
+      const matchesAvailability =
+        !showOnlyAvailable || isAvailable(resource.name);
+
+      return (
+        matchesCategory &&
+        matchesLocation &&
+        matchesCapacity &&
+        matchesAvailability
+      );
+    });
+  }, [
+    resourceOptions,
+    filters,
+    showOnlyAvailable,
+    reservations,
+    form.date,
+    form.startTime,
+    form.endTime,
+  ]);
+
+  function updateFilter(
+    field: keyof ResourceFilters,
+    value: string
+  ) {
+    setFilters((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function resetFilters() {
+    setFilters(emptyFilters);
+    setShowOnlyAvailable(false);
+  }
+
+  function handleOpenChange(value: boolean) {
+    if (!value) {
+      resetFilters();
+    }
+
+    onOpenChange(value);
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">
             Create New Reservation
@@ -35,11 +148,111 @@ export function NewReservationDialog({
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-5">
+          {/* Resource Selection */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-emerald-800">
               Resource Selection
             </h3>
 
+            {/* Resource filters */}
+            <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <SlidersHorizontal size={16} />
+                  Filter Resources
+                </div>
+
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="text-xs font-medium text-emerald-700 hover:underline"
+                >
+                  Clear filters
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1.5 text-sm font-medium">
+                  Resource Type
+
+                  <select
+                    className="form-input"
+                    value={filters.category}
+                    onChange={(event) =>
+                      updateFilter("category", event.target.value)
+                    }
+                  >
+                    <option value="All types">All types</option>
+
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1.5 text-sm font-medium">
+                  Location
+
+                  <select
+                    className="form-input"
+                    value={filters.location}
+                    onChange={(event) =>
+                      updateFilter("location", event.target.value)
+                    }
+                  >
+                    <option value="All locations">All locations</option>
+
+                    {locations.map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1.5 text-sm font-medium sm:col-span-2">
+                  Minimum Capacity
+
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="1"
+                    placeholder="Enter required capacity"
+                    value={filters.minimumCapacity}
+                    onChange={(event) =>
+                      updateFilter("minimumCapacity", event.target.value)
+                    }
+                  />
+                </label>
+              </div>
+
+              <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={showOnlyAvailable}
+                  onChange={(event) =>
+                    setShowOnlyAvailable(event.target.checked)
+                  }
+                  className="h-4 w-4 accent-emerald-700"
+                />
+                Show only available resources
+              </label>
+
+              <p className="mt-2 text-xs text-gray-500">
+                {filteredResources.length} of {resourceOptions.length} resources match your filters.
+              </p>
+
+              {showOnlyAvailable &&
+                (!form.date || !form.startTime || !form.endTime) && (
+                  <p className="mt-2 text-xs text-amber-700">
+                    Select a reservation date, start time, and end time to check availability accurately.
+                  </p>
+                )}
+            </div>
+
+            {/* Resource dropdown */}
             <label className="flex flex-col gap-1.5 text-sm font-medium">
               Select Resource *
 
@@ -52,17 +265,26 @@ export function NewReservationDialog({
                 required
               >
                 <option value="">Choose a resource</option>
-                {resourceOptions.map((resource) => (
+
+                {filteredResources.map((resource) => (
                   <option
                     key={resource.name}
                     value={resource.name}
                   >
                     {resource.name} — {resource.category}
+                    {showOnlyAvailable ? " — Available" : ""}
                   </option>
                 ))}
               </select>
             </label>
 
+            {filteredResources.length === 0 && (
+              <p className="mt-2 text-sm text-amber-700">
+                No resources match your selected filters. Try changing your filters or schedule.
+              </p>
+            )}
+
+            {/* Selected resource information */}
             {form.resource && (
               <div className="mt-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
                 {resourceOptions
@@ -72,6 +294,15 @@ export function NewReservationDialog({
                       key={resource.name}
                       className="grid grid-cols-2 gap-3 text-sm"
                     >
+                      <div>
+                        <span className="text-xs text-gray-500">
+                          Resource Type
+                        </span>
+                        <p className="font-medium text-gray-800">
+                          {resource.category}
+                        </p>
+                      </div>
+
                       <div>
                         <span className="text-xs text-gray-500">
                           Location
@@ -90,12 +321,32 @@ export function NewReservationDialog({
                           {resource.capacity === 1 ? "unit" : "people"}
                         </p>
                       </div>
+
+                      <div>
+                        <span className="text-xs text-gray-500">
+                          Availability
+                        </span>
+                        <p
+                          className={`font-medium ${
+                            isAvailable(resource.name)
+                              ? "text-emerald-700"
+                              : "text-red-700"
+                          }`}
+                        >
+                          {!form.date || !form.startTime || !form.endTime
+                            ? "Select schedule"
+                            : isAvailable(resource.name)
+                              ? "Available"
+                              : "Not available"}
+                        </p>
+                      </div>
                     </div>
                   ))}
               </div>
             )}
           </div>
 
+          {/* Reservation Schedule */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-emerald-800">
               Reservation Schedule
@@ -148,6 +399,7 @@ export function NewReservationDialog({
             </div>
           </div>
 
+          {/* Purpose */}
           <div>
             <h3 className="mb-3 text-sm font-semibold text-emerald-800">
               Booking Purpose
@@ -178,7 +430,7 @@ export function NewReservationDialog({
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
+              onClick={() => handleOpenChange(false)}
             >
               Cancel
             </Button>
